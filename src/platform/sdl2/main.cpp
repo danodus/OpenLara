@@ -345,9 +345,10 @@ void inputUpdate() {
 
     while (SDL_PollEvent(&event) == 1) { // while there are still events to be processed
         switch (event.type) {
-            case SDL_QUIT:
-                Core::isQuit = true;
-
+            case SDL_QUIT: {
+                Core::quit();
+                break;
+            }
             case SDL_KEYDOWN: {
                 int scancode = event.key.keysym.scancode;
                 InputKey key = codeToInputKey(scancode);
@@ -551,9 +552,22 @@ int main(int argc, char **argv) {
 #ifdef _GAPI_GLES
         sdl_displaymode.w, sdl_displaymode.h, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP
 #else
-        WIN_W, WIN_H, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+        WIN_W, WIN_H, 
+        #ifndef _GAPI_SW
+            SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+        #else
+            SDL_RENDERER_ACCELERATED | SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP
+        #endif
 #endif
-    ); 
+    );
+
+#ifdef _GAPI_SW
+    SDL_Renderer *sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_SOFTWARE);
+    if (sdl_renderer == NULL) {
+        printf("Unable to create the renderer\n");
+        return -1;
+    }
+#endif
  
     // We try to use the current video mode, but we inform the core of whatever mode SDL2 gave us in the end. 
     SDL_GetWindowSize(sdl_window, &w, &h);
@@ -586,13 +600,34 @@ int main(int argc, char **argv) {
 
     Game::init(lvlName);
 
+#ifdef _GAPI_SW
+    GAPI::swColor = new GAPI::ColorSW[Core::width * Core::height];
+    GAPI::resize();
+
+    SDL_Texture *texture = SDL_CreateTexture(sdl_renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, Core::width, Core::height);
+    if (texture == NULL) {
+        printf("Unable to create the texture\n");
+        return -1;
+    }
+#endif    
+
     while (!Core::isQuit) {
         inputUpdate();
 
         if (Game::update()) {
             Game::render();
             Core::waitVBlank();
+#ifdef _GAPI_SW
+            void *p;
+            int pitch;         
+            SDL_LockTexture(texture, NULL, &p, &pitch);
+            memcpy(p, GAPI::swColor, Core::width * Core::height * 4);
+            SDL_UnlockTexture(texture);
+            SDL_RenderCopy(sdl_renderer, texture, NULL, NULL);
+            SDL_RenderPresent(sdl_renderer);
+#else
             SDL_GL_SwapWindow(sdl_window);
+#endif
         }
     };
 
@@ -600,6 +635,12 @@ int main(int argc, char **argv) {
     Game::deinit();
 
     SDL_DestroyWindow(sdl_window);
+
+#ifdef _GAPI_SW
+    SDL_DestroyTexture(texture);
+    delete[] GAPI::swColor;
+#endif
+
     SDL_Quit();
 
     return 0;
