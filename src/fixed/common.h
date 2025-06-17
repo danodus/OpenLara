@@ -161,8 +161,9 @@
     };
 #elif defined(__XGSOC__)
     #define USE_DIV_TABLE
-
+    #define ROM_READ
     #define MODE4
+    #define MEM_VRAM 0x1000000
     #define FRAME_WIDTH  320
     #define FRAME_HEIGHT 240
 
