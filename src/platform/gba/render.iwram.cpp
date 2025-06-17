@@ -31,7 +31,7 @@ ViewportRel viewportRel;
     uint32 fb = MEM_VRAM;
 #elif defined(__TNS__)
     uint16 fb[FRAME_WIDTH * FRAME_HEIGHT];
-#elif defined(__DOS__)
+#elif defined(__DOS__) || defined(__XGSOC__)
     uint16 fb[FRAME_WIDTH * FRAME_HEIGHT];
 #endif
 
