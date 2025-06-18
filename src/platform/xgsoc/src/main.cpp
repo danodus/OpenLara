@@ -21,6 +21,16 @@ bool quit = false;
 
 extern uint16 fb[FRAME_WIDTH * FRAME_HEIGHT];
 
+const char *files[] = {
+    "GYM.PKD",
+    "LEVEL1.PKD",
+    "LEVEL2.PKD",
+    "TITLE.PKD",
+    "TITLE.SCR",
+    "TRACKS.AD4"
+};
+#define NB_FILES (sizeof(files) / sizeof(files[0]))
+
 const void* TRACKS_AD4 = NULL;
 const void* TITLE_SCR = NULL;
 const void* levelData = NULL;
@@ -45,18 +55,18 @@ unsigned int crc32b(unsigned char *message, size_t size) {
    return ~crc;
 }
 
-int read_sector(uint32_t sector, uint8_t *buffer, uint32_t sector_count) {
+int read_sector(uint32 sector, uint8 *buffer, uint32 sector_count) {
     for (uint32_t i = 0; i < sector_count; ++i) {
-        if (!sd_read_single_block(sector + i, buffer))
+        if (!sd_read_single_block((uint32_t)sector + i, (uint8_t *)buffer))
             return 0;
         buffer += SD_BLOCK_LEN;
     }
     return 1;
 }
 
-int write_sector(uint32_t sector, uint8_t *buffer, uint32_t sector_count) {
+int write_sector(uint32 sector, uint8 *buffer, uint32 sector_count) {
     for (uint32_t i = 0; i < sector_count; ++i) {
-        if (!sd_write_single_block(sector + i, buffer))
+        if (!sd_write_single_block((uint32_t)sector + i, (uint8_t *)buffer))
             return 0;
         buffer += SD_BLOCK_LEN;
     }
@@ -117,99 +127,75 @@ const void* osLoadScreen(LevelID id)
     return TITLE_SCR;
 }
 
-const void* osLoadLevel(LevelID id)
+uint32 preloadFile(uint8 *data, const char *filename)
 {
-    uint32 levelSize, tracksSize, titleSize;
+    uint32 size;
 
+    char path[32];
+    sprintf(path, "/data/%s", filename);
+
+    printf("Reading %s...\n", path);
+    FL_FILE *f = (FL_FILE *)fl_fopen(path, "rb");
+
+    if (!f) {
+        printf("Unable to open %s\n", path);
+        return 0;
+    }
+
+    fl_fseek(f, 0, SEEK_END);
+    size = fl_ftell(f);
+    fl_fseek(f, 0, SEEK_SET);
+
+    fl_fread(data, 1, size, f);
+    fl_fclose(f);
+
+    return size;
+}
+
+bool preloadData()
+{
     if (MEM_READ(GAME_DATA_ADDR) == GAME_DATA_MAGIC) {
         printf("Data already loaded.\n");
-
-        levelSize = MEM_READ(GAME_DATA_ADDR + 4);
-        tracksSize = MEM_READ(GAME_DATA_ADDR + 8);
-        titleSize = MEM_READ(GAME_DATA_ADDR + 12);
-        levelData = (const void *)(GAME_DATA_ADDR + 16);
-        TRACKS_AD4 = (const void *)(GAME_DATA_ADDR + 16 + levelSize);
-        TITLE_SCR = (const void *)(GAME_DATA_ADDR + 16 + levelSize + tracksSize);
-    } else {
-
-        // invalidate mem data
-        MEM_WRITE(GAME_DATA_ADDR, 0);
-
-        uint8* data = (uint8 *)(GAME_DATA_ADDR + 16);
-
-        // level1
-        char buf[32];
-
-        sprintf(buf, "/data/%s.PKD", (const char*)gLevelInfo[id].data);
-
-        printf("Reading %s...\n", buf);
-        FILE *f = fl_fopen(buf, "rb");
-
-        if (!f) {
-            printf("Unable to open %s\n", buf);
-            return NULL;
-        }
-
-        fl_fseek(f, 0, SEEK_END);
-        levelSize = fl_ftell(f);
-        fl_fseek(f, 0, SEEK_SET);
-        MEM_WRITE(GAME_DATA_ADDR + 4, levelSize);
-
-        fl_fread(data, 1, levelSize, f);
-        fl_fclose(f);
-
-        levelData = data;
-        data += levelSize;
-
-        printf("Reading /data/TRACKS.AD4...\n");
-        f = fl_fopen("/data/TRACKS.AD4", "rb");
-        if (!f) {
-            printf("Unable to open /data/TRACKS.AD4\n");
-            return NULL;
-        }
-
-        fl_fseek(f, 0, SEEK_END);
-        tracksSize = fl_ftell(f);
-        fl_fseek(f, 0, SEEK_SET);
-        MEM_WRITE(GAME_DATA_ADDR + 8, tracksSize);
-
-        fl_fread(data, 1, tracksSize, f);
-        fl_fclose(f);
-
-        TRACKS_AD4 = data;
-        data += tracksSize;
-
-        printf("Reading /data/TITLE.SCR...\n");        
-        f = fl_fopen("/data/TITLE.SCR", "rb");
-        if (!f) {
-            printf("Unable to open /data/TITLE.SCR\n");
-            return NULL;
-        }
-
-        fl_fseek(f, 0, SEEK_END);
-        titleSize = fl_ftell(f);
-        fl_fseek(f, 0, SEEK_SET);
-        MEM_WRITE(GAME_DATA_ADDR + 12, titleSize);
-
-        fl_fread(data, 1, titleSize, f);
-        fl_fclose(f);
-
-        TITLE_SCR = data;
-
-        MEM_WRITE(GAME_DATA_ADDR, GAME_DATA_MAGIC);
-
-        // flush cache
-        MEM_WRITE(CONFIG, 1);
+        return true;
     }
-    
-    printf("levelData=%p\n", levelData);
-    printf("TRACKS_AD4=%p\n", TRACKS_AD4);
-    printf("TITLE_SCR=%p\n", TITLE_SCR);
-    printf("Level size: %d\n", levelSize);
-    printf("Tracks size: %d\n", tracksSize);
-    printf("Title size: %d\n", titleSize);
-    //printf("Calculating CRC...\n");
-    //printf("CRC: %x\n", crc32b(levelData, levelSize + tracksSize + titleSize));
+
+    // invalidate mem data
+    MEM_WRITE(GAME_DATA_ADDR, 0);
+
+    uint8* data = (uint8 *)(GAME_DATA_ADDR + 4 + (NB_FILES * 4));
+
+    uint32 offset = 0;
+    for (size_t i = 0; i < NB_FILES; i++) {
+        uint32 size = preloadFile(data, files[i]);
+        if (size == 0)
+            return false;
+        MEM_WRITE(GAME_DATA_ADDR + 4 + (i * 4), offset);
+        offset += size;
+        data += size;
+    }
+
+    MEM_WRITE(GAME_DATA_ADDR, GAME_DATA_MAGIC);    
+
+    return true;
+}
+
+const void* osLoadLevel(LevelID id)
+{
+    printf("osLoadLevel: /data/%s.PKD\n", (const char*)gLevelInfo[id].data);
+
+    for (size_t i = 0; i < NB_FILES; i++) {
+        char buf[32];
+        sprintf(buf, "%s.PKD", (const char*)gLevelInfo[id].data);
+        uint32 offset = MEM_READ(GAME_DATA_ADDR + 4 + (i * 4));
+        const void* addr = (const void*)(GAME_DATA_ADDR + 4 + (NB_FILES * 4) + offset);
+        if (strcmp(files[i], buf) == 0) {
+            levelData = addr;
+        } else if (strcmp(files[i], "TRACKS.AD4") == 0) {
+            TRACKS_AD4 = addr;
+        } else if (strcmp(files[i], "TITLE.SCR") == 0) {
+            TITLE_SCR = addr;
+        }
+    }
     
     printf("Load level successful!\n");
     return (void*)levelData;
@@ -221,13 +207,13 @@ void blit()
     int i = 0;
     for (int y = 0; y < FRAME_HEIGHT; y++)
         for (int x = 0; x < FRAME_WIDTH; x++) {
-        uint16 c = MEM_PAL_BG[((uint8*)fb)[i]];
-        uint8 r = (c << 3);
-        uint8 g = ((c >> 5) << 3);
-        uint8 b = (c >> 10 << 3);
+            uint16 c = MEM_PAL_BG[((uint8*)fb)[i]];
+            uint8 r = (c << 3);
+            uint8 g = ((c >> 5) << 3);
+            uint8 b = (c >> 10 << 3);
             vram[y * 320 + x] = (((uint16)r & 0b11111000) << 8) | (((uint16)g & 0b11111100) << 3) | ((uint16)b >> 3);
             i++;
-    }
+        }
 
     // flush cache
     MEM_WRITE(CONFIG, 1);
@@ -321,6 +307,11 @@ int main(void)
     }
 
     printf("======== OpenLara ========\n");
+
+    if (!preloadData()) {
+        printf("Preload data failed!\n");
+        return 1;
+    }
 
     //soundInit();
     gameInit();
