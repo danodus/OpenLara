@@ -218,14 +218,15 @@ const void* osLoadLevel(LevelID id)
 void blit()
 {
     uint16* vram = (uint16*)MEM_VRAM;
-    for (int i = 0; i < FRAME_WIDTH * FRAME_HEIGHT; i++)
-    {
+    int i = 0;
+    for (int y = 0; y < FRAME_HEIGHT; y++)
+        for (int x = 0; x < FRAME_WIDTH; x++) {
         uint16 c = MEM_PAL_BG[((uint8*)fb)[i]];
         uint8 r = (c << 3);
         uint8 g = ((c >> 5) << 3);
         uint8 b = (c >> 10 << 3);
-        *vram = (((uint16)r & 0b11111000) << 8) | (((uint16)g & 0b11111100) << 3) | ((uint16)b >> 3);
-        vram++;
+            vram[y * 320 + x] = (((uint16)r & 0b11111000) << 8) | (((uint16)g & 0b11111100) << 3) | ((uint16)b >> 3);
+            i++;
     }
 
     // flush cache
