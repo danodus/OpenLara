@@ -205,7 +205,7 @@
 #endif
 
 // Optimization flags =========================================================
-#ifdef __GBA__
+#if defined(__GBA__) || defined(__XGSOC__)
 // hide dead enemies after a while to reduce the number of polygons on the screen
     #define HIDE_CORPSES (30*10) // 10 sec
 // replace trap flor geometry by two flat quads in the static state
@@ -351,7 +351,7 @@ X_INLINE int32 abs(int32 x) {
     #define STATIC_ASSERT(x)
 #endif
 
-#if defined(__GBA_WIN__)
+#if defined(__GBA_WIN__) || defined(__XGSOC__)
     extern uint16 fb[FRAME_WIDTH * FRAME_HEIGHT];
 #elif defined(__GBA__)
     extern uint32 fb;

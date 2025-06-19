@@ -19,8 +19,6 @@ int32 fpsCounter = 0;
 
 bool quit = false;
 
-extern uint16 fb[FRAME_WIDTH * FRAME_HEIGHT];
-
 const char *files[] = {
     "GYM.PKD",
     "LEVEL1.PKD",
