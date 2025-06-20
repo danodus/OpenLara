@@ -172,7 +172,7 @@ void transformRoom_c(const RoomVertex* vertices, int32 count)
         int32 vx = (value & (0xFF)) << 8;
         int32 vy = (value & (0xFF << 8));
         int32 vz = (value & (0xFF << 16)) >> 8;
-        int32 vg = (value & (0xFF << 24)) >> (24 + 3);
+        int32 vg = (value & (0xFF << 24)) >> (24 - 5);
 
         const Matrix &m = matrixGet();
         int32 x = DP43(m.e00, m.e01, m.e02, m.e03, vx, vy, vz);
@@ -195,21 +195,15 @@ void transformRoom_c(const RoomVertex* vertices, int32 count)
         y >>= FIXED_SHIFT;
         z >>= FIXED_SHIFT;
 
-        int32 fog = z - FOG_MIN;
-        if (fog > 0)
+        if (z > FOG_MIN)
         {
-            vg += fog >> (FOG_SHIFT + 3);
-            if (vg > 31)
-            {
-                vg = 31;
+            vg += (z - FOG_MIN) << FOG_SHIFT;
+            if (vg > 8191) {
+                vg = 8191;
             }
         }
 
         PERSPECTIVE(x, y, z);
-
-        // use this in case of overflow
-        //x = X_CLAMP(x, -512, 512);
-        //y = X_CLAMP(y, -512, 512);
 
         x += (FRAME_WIDTH  >> 1);
         y += (FRAME_HEIGHT >> 1);
