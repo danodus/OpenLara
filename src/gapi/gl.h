@@ -64,7 +64,7 @@
     #endif
 
 #elif defined(__SDL2__) 
-    #include <SDL2/SDL.h>
+    #include <SDL.h>
 
     #if defined(_GAPI_GLES) // Default in SDL2 is GLES3. If we want GLES2, pass -D_GAPI_GLES2.
     #if defined (_GAPI_GLES2) // We want GLES2 on SDL2
@@ -129,8 +129,8 @@
     #define PFNGLPROGRAMBINARYPROC      PFNGLPROGRAMBINARYOESPROC
 
     #else // We want OpenGL on SDL2, not GLES
-        #include <SDL2/SDL_opengl.h>
-        #include <SDL2/SDL_opengl_glext.h>
+        #include <SDL_opengl.h>
+        #include <SDL_opengl_glext.h>
     #endif
 
 #elif defined(_OS_PSC)

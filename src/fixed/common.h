@@ -159,6 +159,26 @@
         MARS_CMD_CLEAR,
         MARS_CMD_FLUSH
     };
+#elif defined(__XGSOC__)
+    #define USE_DIV_TABLE
+    #define ROM_READ
+    #define MODE4
+    #define MEM_VRAM 0x1000000
+    #define FRAME_WIDTH  240
+    #define FRAME_HEIGHT 160
+
+    #define USE_FMT     (LVL_FMT_PKD)
+#elif defined(__SDL2__)
+    #define USE_DIV_TABLE
+    #define MODEHW
+    #define GAPI_GL1
+
+    extern int FRAME_WIDTH;
+    extern int FRAME_HEIGHT;
+    extern float FRAME_PERSP;
+
+    #define USE_FMT     (LVL_FMT_PHD)
+    #include <assert.h>
 #else
     #error unsupported platform
 #endif
@@ -298,7 +318,7 @@ typedef uint16             divTableInt;
     typedef uint8 ColorIndex;
 #endif
 
-#define ADDR_ALIGN4(x)  ((uint8*)x += ((intptr_t(x) + 3) & ~3) - intptr_t(x))
+#define ADDR_ALIGN4(x)  (x += ((intptr_t(x) + 3) & ~3) - intptr_t(x))
 
 //#include <new>
 inline void* operator new(size_t, void *ptr)
@@ -314,7 +334,7 @@ X_INLINE int32 abs(int32 x) {
 
 #if defined(__GBA__) || defined(__NDS__) || defined(__32X__)
     #define int2str(x,str) itoa(x, str, 10)
-#elif defined(__3DO__)
+#elif defined(__3DO__) || defined(__SDL2__)
     #define int2str(x,str) sprintf(str, "%d", x)
 #elif defined(__TNS__)
     #define int2str(x,str) __itoa(x, str, 10)
@@ -337,6 +357,9 @@ X_INLINE int32 abs(int32 x) {
 #if defined(__WIN32__) || defined(__GBA_WIN__)
     #define ASSERT(x) { if (!(x)) { DebugBreak(); } }
     #define STATIC_ASSERT(x) typedef char static_assert_##__COUNTER__[(x) ? 1 : -1]
+#elif defined(__SDL2__)
+    #define ASSERT(x) assert(x)
+    #define STATIC_ASSERT(x)
 #else
     #define ASSERT(x)
     #define STATIC_ASSERT(x)
