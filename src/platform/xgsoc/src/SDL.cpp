@@ -31,6 +31,10 @@ static SDL_Keycode get_keycode(int scancode, bool extended_key) {
         switch (scancode) {
             case 0x76:
                 return SDLK_ESCAPE;
+            case 0x5A:
+                return SDLK_RETURN;
+            case 0x29:
+                return SDLK_SPACE;
             case 0x16:
                 return SDLK_1;
             case 0x1E:
@@ -49,6 +53,8 @@ static SDL_Keycode get_keycode(int scancode, bool extended_key) {
                 return SDLK_c;
             case 0x23:
                 return SDLK_d;
+            case 0x15:
+                return SDLK_q;
             case 0x1B:
                 return SDLK_s;
             case 0x1D:

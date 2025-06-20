@@ -14,8 +14,6 @@ extern "C" {
 #define GAME_DATA_MAGIC 0x1234ABCD
 
 int32 fps;
-int32 frameIndex = 0;
-int32 fpsCounter = 0;
 
 bool quit = false;
 
@@ -215,8 +213,6 @@ void blit()
 
     // flush cache
     MEM_WRITE(CONFIG, 1);
-
-    frameIndex++;
 }
 
 void updateInput()
@@ -238,22 +234,27 @@ void updateInput()
                     case SDLK_RIGHT:
                         keys |= IK_RIGHT;
                         break;
-                    case 'a':
-                        keys |= IK_A;
-                        break;
-                    case 'b':
+                    case SDLK_a:
                         keys |= IK_B;
                         break;
-                    case '1':
-                        keys |= IK_SELECT;
+                    case SDLK_s:
+                        keys |= IK_A;
                         break;
-                    case '2':
+                    case SDLK_q:
+                        keys |= IK_L;
+                        break;
+                    case SDLK_w:
+                        keys |= IK_R;
+                        break;
+                    case SDLK_RETURN:
                         keys |= IK_START;
+                        break;
+                    case SDLK_SPACE:
+                        keys |= IK_SELECT;
                         break;
                     case SDLK_ESCAPE:
                         quit = true;
                         break;
-                        
                 }
                 break;
             case SDL_KEYUP:
@@ -270,17 +271,23 @@ void updateInput()
                     case SDLK_RIGHT:
                         keys &= ~IK_RIGHT;
                         break;
-                    case 'a':
-                        keys &= ~IK_A;
-                        break;
-                    case 'b':
+                    case SDLK_a:
                         keys &= ~IK_B;
                         break;
-                    case '1':
-                        keys &= ~IK_SELECT;
+                    case SDLK_s:
+                        keys &= ~IK_A;
                         break;
-                    case '2':
+                    case SDLK_q:
+                        keys &= ~IK_L;
+                        break;
+                    case SDLK_w:
+                        keys &= ~IK_R;
+                        break;
+                    case SDLK_RETURN:
                         keys &= ~IK_START;
+                        break;
+                    case SDLK_SPACE:
+                        keys &= ~IK_SELECT;
                         break;
                 }
                 break;
@@ -314,39 +321,24 @@ int main(void)
     //soundInit();
     gameInit();
 
-    int32 lastFrameIndex = -1;
-
+    int32 lastFrame = 0;
     quit = false;
+    int32 count = 0;
+    int32 startTime = osGetSystemTimeMS();
+    int32 loopStartTime = startTime;
     while (!quit)
     {
         updateInput();
-
-        int32 frame = frameIndex / 2;
-        //int32 delta = frame - lastFrameIndex;
-        int32 delta = 2;
-
-        // if (!delta)
-        //     continue;
-        lastFrameIndex = frame;
-
-        // rumbleUpdate(delta)
-        //printf(">>update\n");
-        gameUpdate(delta);
-        //printf("<<update\n");
-        //printf(">>render\n");
+        gameUpdate(count);
         gameRender();
-        //printf("<<render\n");
         blit();
-        fpsCounter++;
-        if (frameIndex >= 60)
-        {
-            frameIndex -= 60;
-            lastFrameIndex -= 30;
-
-            fps = fpsCounter;
-
-            fpsCounter = 0;
-        }        
+        int32 time = osGetSystemTimeMS();
+        int32 frame = (time - startTime) / 33;
+        count = frame - lastFrame;
+        lastFrame = frame;
+        int32 period = (time - loopStartTime);
+        fps = (period > 0) ? (1000 / period) : 0;
+        loopStartTime = time;
     }
 
     fl_shutdown();    

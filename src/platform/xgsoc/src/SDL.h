@@ -16,6 +16,8 @@ typedef enum {
 enum {
     SDLK_UNKNOWN = 0,
     SDLK_ESCAPE = '\033',
+    SDLK_RETURN = '\r',
+    SDLK_SPACE = ' ',
     SDLK_1 = '1',
     SDLK_2 = '2',
     SDLK_3 = '3',
@@ -28,6 +30,7 @@ enum {
     SDLK_a = 'a',
     SDLK_c = 'c',
     SDLK_d = 'd',
+    SDLK_q = 'q',
     SDLK_s = 's',
     SDLK_w = 'w',
     SDLK_x = 'x',
