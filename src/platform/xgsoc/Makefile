@@ -14,7 +14,7 @@ OBJDUMP = ${RISCV_TOOLCHAIN_PATH}${RISCV_TOOLCHAIN_PREFIX}objdump
 CC = ${RISCV_TOOLCHAIN_PATH}${RISCV_TOOLCHAIN_PREFIX}gcc
 CXX = ${RISCV_TOOLCHAIN_PATH}${RISCV_TOOLCHAIN_PREFIX}g++
 
-RISCV_CC_OPT = -march=rv32imaf_zicsr -mabi=ilp32f
+RISCV_CC_OPT = -march=rv32im -mabi=ilp32 -mno-div
 
 SRCS = start.S $(shell find -L $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.S')
 OBJS := $(SRCS:%=./$(BUILD_DIR)/%.o)

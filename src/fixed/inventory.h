@@ -1465,9 +1465,11 @@ struct Inventory
 
     void draw()
     {
-        //clear();
-        ASSERT(background);
-        renderBackground(background);
+        if (background) {
+            renderBackground(background);
+        } else {
+            clear();
+        }
 
         if (page == INV_PAGE_END)
         {

@@ -13,6 +13,8 @@ extern "C" {
 #define GAME_DATA_ADDR  (20*1024*1024)
 #define GAME_DATA_MAGIC 0x1234ABCD
 
+#define VDU_PALETTE 0x10020000
+
 int32 fps;
 
 bool quit = false;
@@ -71,7 +73,16 @@ int write_sector(uint32 sector, uint8 *buffer, uint32 sector_count) {
 
 void osSetPalette(const uint16* palette)
 {
-    memcpy((uint16*)MEM_PAL_BG, palette, 256 * 2);
+    uint32 *p = (uint32 *)VDU_PALETTE;
+    for (uint32 i = 0; i < 256; ++i) {
+        uint16 c = *palette++;
+        uint32 v = 0;
+        v |= (c & 0x1F) >> 1; v <<= 4;
+        v |= ((c >> 5) & 0x1F) >> 1; v <<= 4;
+        v |= ((c >> 10) & 0x1F) >> 1;
+        *p = v;
+        p++;
+    }
 }
 
 int32 osGetSystemTimeMS()
@@ -120,7 +131,8 @@ void osJoyVibrate(int32 index, int32 L, int32 R)
 
 const void* osLoadScreen(LevelID id)
 {
-    return TITLE_SCR;
+    //return TITLE_SCR;
+    return NULL;
 }
 
 uint32 preloadFile(uint8 *data, const char *filename)
@@ -199,20 +211,8 @@ const void* osLoadLevel(LevelID id)
 
 void blit()
 {
-    uint16* vram = (uint16*)MEM_VRAM;
-    int i = 0;
-    for (int y = 0; y < FRAME_HEIGHT; y++)
-        for (int x = 0; x < FRAME_WIDTH; x++) {
-            uint16 c = MEM_PAL_BG[((uint8*)fb)[i]];
-            uint8 r = (c << 3);
-            uint8 g = ((c >> 5) << 3);
-            uint8 b = (c >> 10 << 3);
-            vram[y * 320 + x] = (((uint16)r & 0b11111000) << 8) | (((uint16)g & 0b11111100) << 3) | ((uint16)b >> 3);
-            i++;
-        }
-
-    // flush cache
-    MEM_WRITE(CONFIG, 1);
+    uint8* vram = (uint8*)MEM_VRAM;
+    memcpy(vram, fb, FRAME_WIDTH * FRAME_HEIGHT);
 }
 
 void updateInput()
@@ -330,7 +330,9 @@ int main(void)
     {
         updateInput();
         gameUpdate(count);
+        int32 timeRenderStart = osGetSystemTimeMS(); 
         gameRender();
+        int32 timeBlitStart = osGetSystemTimeMS(); 
         blit();
         int32 time = osGetSystemTimeMS();
         int32 frame = (time - startTime) / 33;
@@ -338,6 +340,7 @@ int main(void)
         lastFrame = frame;
         int32 period = (time - loopStartTime);
         fps = (period > 0) ? (1000 / period) : 0;
+        printf("Render: %d, Blit: %d, total: %d\n", timeBlitStart - timeRenderStart, time - timeBlitStart, period);
         loopStartTime = time;
     }
 

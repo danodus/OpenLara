@@ -163,9 +163,9 @@
     #define USE_DIV_TABLE
     #define ROM_READ
     #define MODE4
-    #define MEM_VRAM 0x1000000
-    #define FRAME_WIDTH  240
-    #define FRAME_HEIGHT 160
+    #define MEM_VRAM 0x10000000
+    #define FRAME_WIDTH  320
+    #define FRAME_HEIGHT 240
 
     #define USE_FMT     (LVL_FMT_PKD)
 #else
