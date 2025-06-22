@@ -92,37 +92,64 @@ int32 osGetSystemTimeMS()
 
 bool osSaveSettings()
 {
-    // TODO
-    printf("osSaveSettings\n");
-    return false;
+    FL_FILE* f = (FL_FILE*)fl_fopen("/settings.dat", "wb");
+    if (!f) return false;
+    fl_fwrite(&gSettings, sizeof(gSettings), 1, f);
+    fl_fclose(f);
+    return true;
 }
 
 bool osLoadSettings()
 {
-    // TODO
-    printf("osLoadSettings\n");
-    return false;
+    FL_FILE* f = (FL_FILE*)fl_fopen("/settings.dat", "rb");
+    if (!f) return false;
+    uint8 version;
+    fl_fread(&version, 1, 1, f);
+    if (version != gSettings.version) {
+        fl_fclose(f);
+        return false;
+    }
+    fl_fread((uint8*)&gSettings + 1, sizeof(gSettings) - 1, 1, f);
+    fl_fclose(f);
+    return true;
 }
 
 bool osCheckSave()
 {
-    // TODO
-    printf("osCheckSave\n");
-    return false;
+    FL_FILE* f = (FL_FILE*)fl_fopen("/savegame.dat", "rb");
+    if (!f) return false;
+    fl_fclose(f);
+    return true;
 }
 
 bool osSaveGame()
 {
-    // TODO
-    printf("osSaveGame\n");
-    return false;
+    FL_FILE* f = (FL_FILE*)fl_fopen("/savegame.dat", "wb");
+    if (!f) return false;
+    fl_fwrite(&gSaveGame, sizeof(gSaveGame), 1, f);
+    fl_fwrite(&gSaveData, gSaveGame.dataSize, 1, f);
+    fl_fclose(f);
+    return true;
 }
 
 bool osLoadGame()
 {
-    // TODO
-    printf("osLoadGame\n");
-    return false;
+    FL_FILE* f = (FL_FILE*)fl_fopen("/savegame.dat", "rb");
+    if (!f) return false;
+
+    uint32 version;
+    fl_fread(&version, sizeof(version), 1, f);
+
+    if (SAVEGAME_VER != version)
+    {
+        fl_fclose(f);
+        return false;
+    }
+
+    fl_fread(&gSaveGame.dataSize, sizeof(gSaveGame) - sizeof(version), 1, f);
+    fl_fread(&gSaveData, gSaveGame.dataSize, 1, f);
+    fl_fclose(f);
+    return true;
 }
 
 void osJoyVibrate(int32 index, int32 L, int32 R)
