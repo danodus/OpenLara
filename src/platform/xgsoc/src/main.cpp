@@ -77,9 +77,9 @@ void osSetPalette(const uint16* palette)
     for (uint32 i = 0; i < 256; ++i) {
         uint16 c = *palette++;
         uint32 v = 0;
-        v |= (c & 0x1F) >> 1; v <<= 4;
-        v |= ((c >> 5) & 0x1F) >> 1; v <<= 4;
-        v |= ((c >> 10) & 0x1F) >> 1;
+        v |= (c & 0x1F) << 3; v <<= 8;
+        v |= ((c >> 5) & 0x1F) << 3; v <<= 8;
+        v |= ((c >> 10) & 0x1F) << 3;
         *p = v;
         p++;
     }
@@ -212,7 +212,13 @@ const void* osLoadLevel(LevelID id)
 void blit()
 {
     uint8* vram = (uint8*)MEM_VRAM;
-    memcpy(vram, fb, FRAME_WIDTH * FRAME_HEIGHT);
+    uint8* p = (uint8*)fb;
+    //memcpy(vram, fb, FRAME_WIDTH * FRAME_HEIGHT);
+    for (int y = 0; y < FRAME_HEIGHT; y++)
+        for (int x = 0; x < FRAME_WIDTH; x++) {
+            vram[y * 320 + x] = *p;
+            p++;
+        }
 }
 
 void updateInput()
@@ -318,6 +324,8 @@ int main(void)
         return 1;
     }
 
+    memset((void*)MEM_VRAM, 0, 320*240);
+
     //soundInit();
     gameInit();
 
@@ -340,7 +348,7 @@ int main(void)
         lastFrame = frame;
         int32 period = (time - loopStartTime);
         fps = (period > 0) ? (1000 / period) : 0;
-        printf("Render: %d, Blit: %d, total: %d\n", timeBlitStart - timeRenderStart, time - timeBlitStart, period);
+        //printf("Render: %d, Blit: %d, total: %d\n", timeBlitStart - timeRenderStart, time - timeBlitStart, period);
         loopStartTime = time;
     }
 
